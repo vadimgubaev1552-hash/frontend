@@ -6,7 +6,6 @@
     </div>
 
     <div class="form-content">
-      <!-- Тип изделия -->
       <div class="form-group">
         <label>Тип изделия</label>
         <select v-model="formData.type">
@@ -20,7 +19,6 @@
         </select>
       </div>
 
-      <!-- Проба -->
       <div class="form-group">
         <label>Проба металла</label>
         <select v-model="formData.purity">
@@ -31,16 +29,18 @@
         </select>
       </div>
 
-      <!-- Наличие вставок -->
       <div class="form-group">
         <label>Наличие вставок</label>
         <div class="radio-group">
-          <label class="radio-label"><input type="radio" value="Да" v-model="formData.hasStones"> Да</label>
-          <label class="radio-label"><input type="radio" value="Нет" v-model="formData.hasStones"> Нет</label>
+          <label class="radio-label"
+            ><input type="radio" value="Да" v-model="formData.hasStones" /> Да</label
+          >
+          <label class="radio-label"
+            ><input type="radio" value="Нет" v-model="formData.hasStones" /> Нет</label
+          >
         </div>
       </div>
 
-      <!-- Состояние -->
       <div class="form-group">
         <label>Состояние изделия</label>
         <select v-model="formData.condition">
@@ -51,17 +51,22 @@
         </select>
       </div>
 
-      <!-- Вес -->
       <div class="form-group">
         <label>Вес (грамм) <span class="optional">— необязательно</span></label>
-        <input type="number" step="0.01" v-model="formData.weight" placeholder="Например: 5.2">
+        <input type="number" step="0.01" v-model="formData.weight" placeholder="Например: 5.2" />
       </div>
 
-      <!-- Загрузка фото -->
       <div class="form-group">
         <label>Фотографии изделия (макс. 5)</label>
         <div class="upload-area" @click="$refs.fileInput.click()">
-          <input type="file" multiple accept="image/*" @change="handleFileUpload" ref="fileInput" style="display: none">
+          <input
+            type="file"
+            multiple
+            accept="image/*"
+            @change="handleFileUpload"
+            ref="fileInput"
+            style="display: none"
+          />
           <div class="upload-placeholder">
             <span class="upload-icon">📸</span>
             <p>Нажмите для загрузки фото</p>
@@ -70,43 +75,40 @@
         </div>
         <div class="preview-container">
           <div v-for="(preview, index) in previews" :key="index" class="preview">
-            <img :src="preview" alt="preview">
+            <img :src="preview" alt="preview" />
             <button class="remove-btn" @click.stop="removeImage(index)">×</button>
           </div>
         </div>
         <div class="file-counter">{{ previews.length }}/5 фото</div>
       </div>
 
-      <!-- Кнопка отправки -->
       <button class="submit-btn" @click="submitForm">Отправить заявку</button>
     </div>
 
-    <!-- Модальное окно предупреждения -->
-    <WarningModal
-      :visible="showModal"
-      :isReady="analysisReady"
-      @confirm="showResult"
-    />
+    <ResultPanel :result="analysisResult" />
+    <ActionButtons @createDeal="handleCreateDeal" />
+    <WarningModal :visible="showModal" :isReady="analysisReady" @confirm="showResult" />
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, reactive } from 'vue'
-import WarningModal from './WarningModal.vue'
+import WarningModal from '@/components/WarningModal/WarningModal.vue'
+import ResultPanel from '@/components/ResultPanel/ResultPanel.vue'
+import ActionButtons from '@/components/ActionButtons/ActionButtons.vue'
 
 const formData = reactive({
   type: '',
   purity: '',
   hasStones: '',
   condition: '',
-  weight: ''
+  weight: '',
 })
 
 const previews = ref([])
 const files = ref([])
 const fileInput = ref(null)
 
-// Переменные для модалки
 const showModal = ref(false)
 const analysisReady = ref(false)
 const analysisResult = ref(null)
@@ -120,7 +122,7 @@ const handleFileUpload = (event) => {
     return
   }
 
-  selectedFiles.forEach(file => {
+  selectedFiles.forEach((file) => {
     files.value.push(file)
     const reader = new FileReader()
     reader.onload = (e) => {
@@ -138,7 +140,16 @@ const removeImage = (index) => {
   }
 }
 
-const submitForm = () => {
+const fileToBase64 = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
+const submitForm = async () => {
   if (!formData.type || !formData.purity || !formData.hasStones || !formData.condition) {
     alert('Пожалуйста, заполните все обязательные поля')
     return
@@ -152,30 +163,73 @@ const submitForm = () => {
   showModal.value = true
   analysisReady.value = false
 
-  console.log('Отправка данных на анализ:', formData)
-  console.log('Файлов:', files.value.length)
+  const imagesBase64 = []
+  for (const file of files.value) {
+    const base64 = await fileToBase64(file)
+    imagesBase64.push(base64)
+  }
 
-  // Имитация запроса к серверу (3 секунды)
-  setTimeout(() => {
-    analysisReady.value = true
-    analysisResult.value = {
-      loanAmount: 15000,
-      buyoutAmount: 25000,
-      probability: 'Высокая',
-      defects: 'Незначительные потертости'
+  try {
+    const response = await fetch('http://localhost:8000/index.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: 'analyze',
+        formData: formData,
+        images: imagesBase64,
+      }),
+    })
+
+    const data = await response.json()
+
+    if (data.success) {
+      analysisResult.value = data.result
+      analysisReady.value = true
+    } else {
+      throw new Error(data.error || 'Ошибка при анализе')
     }
-    console.log('Анализ завершён, кнопка стала бордовой')
-  }, 3000)
+  } catch (error) {
+    alert('Ошибка при соединении с сервером: ' + error.message)
+    showModal.value = false
+  }
 }
 
 const showResult = () => {
   showModal.value = false
-  alert('Результат получен! Сумма займа: ' + analysisResult.value.loanAmount + ' руб.')
+}
+const handleCreateDeal = async (dealData: any): Promise<void> => {
+  try {
+    const response = await fetch('http://localhost:8000/index.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        action: 'createDeal',
+        clientData: {
+          fio: dealData.fio,
+          phone: dealData.phone
+        },
+        calculationResult: analysisResult.value,
+        images: previews.value
+      })
+    })
+
+    const data = await response.json()
+
+    if (data.success) {
+    } else {
+      throw new Error(data.error || 'Ошибка создания сделки')
+    }
+
+  } catch (error) {
+  }
 }
 </script>
 
 <style scoped>
-/* твои существующие стили остаются без изменений */
 .form-container {
   max-width: 700px;
   margin: 0 auto;
@@ -186,7 +240,7 @@ const showResult = () => {
 }
 
 .form-header {
-  background: #8B1A1A;
+  background: #8b1a1a;
   color: white;
   padding: 30px;
   text-align: center;
@@ -223,7 +277,8 @@ label {
   color: #999;
 }
 
-select, input[type="number"] {
+select,
+input[type='number'] {
   width: 100%;
   padding: 12px;
   border: 1px solid #e0d0d0;
@@ -233,9 +288,10 @@ select, input[type="number"] {
   background: #fefafa;
 }
 
-select:focus, input:focus {
+select:focus,
+input:focus {
   outline: none;
-  border-color: #8B1A1A;
+  border-color: #8b1a1a;
   background: white;
   box-shadow: 0 0 0 2px rgba(139, 26, 26, 0.1);
 }
@@ -256,7 +312,7 @@ select:focus, input:focus {
 
 .radio-label input {
   cursor: pointer;
-  accent-color: #8B1A1A;
+  accent-color: #8b1a1a;
 }
 
 .upload-area {
@@ -270,7 +326,7 @@ select:focus, input:focus {
 }
 
 .upload-area:hover {
-  border-color: #8B1A1A;
+  border-color: #8b1a1a;
   background: #fef5f5;
 }
 
@@ -311,7 +367,7 @@ select:focus, input:focus {
   position: absolute;
   top: -8px;
   right: -8px;
-  background: #8B1A1A;
+  background: #8b1a1a;
   color: white;
   border: none;
   border-radius: 50%;
@@ -326,7 +382,7 @@ select:focus, input:focus {
 }
 
 .remove-btn:hover {
-  background: #6B1414;
+  background: #6b1414;
 }
 
 .file-counter {
@@ -338,7 +394,7 @@ select:focus, input:focus {
 .submit-btn {
   width: 100%;
   padding: 14px;
-  background: #8B1A1A;
+  background: #8b1a1a;
   color: white;
   border: none;
   border-radius: 8px;
@@ -350,7 +406,7 @@ select:focus, input:focus {
 }
 
 .submit-btn:hover {
-  background: #6B1414;
+  background: #6b1414;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(139, 26, 26, 0.3);
 }
