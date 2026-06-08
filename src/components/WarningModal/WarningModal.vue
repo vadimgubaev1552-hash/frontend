@@ -5,37 +5,28 @@
       <h3>Внимание! Предварительный расчёт</h3>
       <p class="modal-text">
         Расчет является предварительным и выполнен на основании фотографий и предоставленных данных.
-        Окончательная оценка изделия определяется специалистом после очного осмотра в подразделении компании.
+        Окончательная оценка изделия определяется специалистом после очного осмотра в подразделении
+        компании.
       </p>
-      <button
-        class="modal-btn"
-        :class="{ 'ready': isReady }"
-        @click="confirm"
-        :disabled="!isReady"
-      >
+      <button class="modal-btn" :class="{ ready: isReady }" @click="confirm" :disabled="!isReady">
         {{ isReady ? 'Показать результат' : 'Идёт анализ...' }}
       </button>
     </div>
   </div>
 </template>
 
-<script setup>
-import { defineProps, defineEmits } from 'vue'
+<script setup lang="ts">
+interface Props {
+  visible: boolean
+  isReady: boolean
+}
 
-const props = defineProps({
-  visible: {
-    type: Boolean,
-    default: false
-  },
-  isReady: {
-    type: Boolean,
-    default: false
-  }
-})
+const props = defineProps<Props>()
+const emit = defineEmits<{
+  (e: 'confirm'): void
+}>()
 
-const emit = defineEmits(['confirm'])
-
-const confirm = () => {
+const confirm = (): void => {
   if (props.isReady) {
     emit('confirm')
   }
@@ -75,7 +66,7 @@ const confirm = () => {
 
 .modal-container h3 {
   font-size: 24px;
-  color: #8B1A1A;
+  color: #8b1a1a;
   margin-bottom: 15px;
   font-weight: 700;
 }
@@ -100,12 +91,12 @@ const confirm = () => {
 }
 
 .modal-btn.ready {
-  background: #8B1A1A;
+  background: #8b1a1a;
   color: white;
 }
 
 .modal-btn.ready:hover {
-  background: #6B1414;
+  background: #6b1414;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(139, 26, 26, 0.3);
 }
