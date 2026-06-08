@@ -6,7 +6,6 @@
     </div>
 
     <div class="form-content">
-      <!-- Тип изделия -->
       <div class="form-group">
         <label>Тип изделия</label>
         <select v-model="formData.type">
@@ -20,7 +19,6 @@
         </select>
       </div>
 
-      <!-- Проба -->
       <div class="form-group">
         <label>Проба металла</label>
         <select v-model="formData.purity">
@@ -31,7 +29,6 @@
         </select>
       </div>
 
-      <!-- Наличие вставок -->
       <div class="form-group">
         <label>Наличие вставок</label>
         <div class="radio-group">
@@ -44,7 +41,6 @@
         </div>
       </div>
 
-      <!-- Состояние -->
       <div class="form-group">
         <label>Состояние изделия</label>
         <select v-model="formData.condition">
@@ -55,13 +51,11 @@
         </select>
       </div>
 
-      <!-- Вес -->
       <div class="form-group">
         <label>Вес (грамм) <span class="optional">— необязательно</span></label>
         <input type="number" step="0.01" v-model="formData.weight" placeholder="Например: 5.2" />
       </div>
 
-      <!-- Загрузка фото -->
       <div class="form-group">
         <label>Фотографии изделия (макс. 5)</label>
         <div class="upload-area" @click="$refs.fileInput.click()">
@@ -88,7 +82,6 @@
         <div class="file-counter">{{ previews.length }}/5 фото</div>
       </div>
 
-      <!-- Кнопка отправки -->
       <button class="submit-btn" @click="submitForm">Отправить заявку</button>
     </div>
 
