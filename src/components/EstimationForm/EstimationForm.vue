@@ -86,7 +86,7 @@
     </div>
 
     <ResultPanel :result="analysisResult" />
-    <ActionButtons @createDeal="handleCreateDeal" />
+    <ActionButtons @createDeal="handleCreateDeal" v-if="analysisResult" />
     <WarningModal :visible="showModal" :isReady="analysisReady" @confirm="showResult" />
   </div>
 </template>
@@ -204,17 +204,17 @@ const handleCreateDeal = async (dealData: any): Promise<void> => {
     const response = await fetch('http://localhost:8000/index.php', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         action: 'createDeal',
         clientData: {
           fio: dealData.fio,
-          phone: dealData.phone
+          phone: dealData.phone,
         },
         calculationResult: analysisResult.value,
-        images: previews.value
-      })
+        images: previews.value,
+      }),
     })
 
     const data = await response.json()
@@ -223,9 +223,7 @@ const handleCreateDeal = async (dealData: any): Promise<void> => {
     } else {
       throw new Error(data.error || 'Ошибка создания сделки')
     }
-
-  } catch (error) {
-  }
+  } catch (error) {}
 }
 </script>
 
